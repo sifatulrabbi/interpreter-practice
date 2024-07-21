@@ -2,8 +2,9 @@ package mathparser
 
 import (
 	"log"
-	"slices"
 )
+
+type TokenType string
 
 type Operation struct {
 	Val    string
@@ -13,7 +14,7 @@ type Operation struct {
 }
 
 type Token struct {
-	Type    string
+	Type    TokenType
 	Literal string
 }
 
@@ -40,17 +41,20 @@ var (
 	}
 )
 
-func Lexer(input string) []Token {
+const (
+	MATH_OP TokenType = "MATH_OP"
+	INTEGER TokenType = "INTEGER"
+)
+
+func ParseTokens(input string) []Token {
 	tokens := []Token{}
-	t := Token{}
 	for i := 0; i < len(input); i++ {
 		v := string(input[i])
-		t.Literal += v
-		if i+1 < len(input) && slices.Contains([]string{" ", "\n", "\n\r"}, string(input[i+1])) {
-			tokens = append(tokens, t)
-			t = Token{}
-			i++
+		if shouldIgnore(v) {
+			continue
 		}
+		tt := getTokenType(v)
+		tokens = append(tokens, Token{Type: tt, Literal: v})
 	}
 	return tokens
 }
@@ -87,4 +91,31 @@ func ExecOperation(o Operation) int {
 		log.Panicf("Invalid or unsupported action: %s\n", o.Action)
 	}
 	return fn(o.Left, o.Right)
+}
+
+func getTokenType(s string) TokenType {
+	if _, ok := operationsTabble[s]; ok {
+		return MATH_OP
+	}
+	if _, ok := numbersTable[s]; ok {
+		return INTEGER
+	}
+	log.Panicf("Invalid character '%s'\n", s)
+	return ""
+}
+
+func shouldIgnore(s string) bool {
+	ignore := false
+	switch s {
+	case "\n":
+		ignore = true
+		break
+	case "\n\r":
+		ignore = true
+		break
+	case " ":
+		ignore = true
+		break
+	}
+	return ignore
 }
