@@ -1,32 +1,20 @@
 package main
 
-import "funlang/mathparser"
+import (
+	"bufio"
+	"os"
+)
 
 func main() {
-	inStr := ""
-	operations := mathparser.Mathparser(inStr)
+	args := os.Args[1:]
+	if len(args) < 1 || args[0] == "" {
+		sc := bufio.NewScanner(os.Stdin)
+		for sc.Scan() {
+			text := sc.Text()
+			if text == "exit" {
+				break
+			}
+		}
+		return
+	}
 }
-
-// func main() {
-// 	var (
-// 		args    = os.Args[1:]
-// 		content string
-// 		token   *tokenizer.Token
-// 	)
-// 	if len(args) < 1 {
-// 		content = inputparser.ParseCLI()
-// 	} else if len(args) == 1 {
-// 		content = inputparser.ParseFile(args[0])
-// 	} else {
-// 		log.Panicln("Invalid command")
-// 	}
-// 	token = tokenizer.Tokenize(content)
-// 	printTokenList(token)
-// }
-//
-// func printTokenList(head *tokenizer.Token) {
-// 	for curr := head; curr != nil; curr = curr.Next {
-// 		fmt.Printf("%s ", curr.Val)
-// 	}
-// 	fmt.Println()
-// }
