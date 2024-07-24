@@ -27,6 +27,32 @@ const (
 
 var operationFns = map[string]func(l, r int) int{}
 
+func init() {
+	operationFns["+"] = func(l, r int) int {
+		return l + r
+	}
+
+	operationFns["-"] = func(l, r int) int {
+		return l - r
+	}
+
+	operationFns["*"] = func(l, r int) int {
+		return l * r
+	}
+
+	operationFns["/"] = func(l, r int) int {
+		return l / r
+	}
+
+	operationFns["%"] = func(l, r int) int {
+		return l % r
+	}
+
+	// operationFns["**"] = func(l, r int) int {
+	// 	return l ^ r
+	// }
+}
+
 func ParseTokens(input string) []Token {
 	var (
 		tokens             = []Token{}
@@ -83,32 +109,6 @@ func BuildEquations(tokens []Token) []Equation {
 		i += 2
 	}
 	return operations
-}
-
-func init() {
-	operationFns["+"] = func(l, r int) int {
-		return l + r
-	}
-
-	operationFns["-"] = func(l, r int) int {
-		return l - r
-	}
-
-	operationFns["*"] = func(l, r int) int {
-		return l * r
-	}
-
-	operationFns["/"] = func(l, r int) int {
-		return l / r
-	}
-
-	operationFns["%"] = func(l, r int) int {
-		return l % r
-	}
-
-	// operationFns["**"] = func(l, r int) int {
-	// 	return l ^ r
-	// }
 }
 
 func ExecOperation(o Equation) int {
