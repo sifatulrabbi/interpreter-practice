@@ -22,7 +22,13 @@ func (l *Lexer) NextToken() token.Token {
 	l.skipWhitespace()
 	switch l.currentChar {
 	case '=':
-		tok = newToken(token.ASSIGN, l.currentChar)
+		if l.peekChar() == '=' {
+			ch := l.currentChar
+			l.readChar()
+			tok = newToken(token.EQUAL, ch, l.currentChar)
+		} else {
+			tok = newToken(token.ASSIGN, l.currentChar)
+		}
 		break
 	case ';':
 		tok = newToken(token.SEMICOLON, l.currentChar)
@@ -39,6 +45,9 @@ func (l *Lexer) NextToken() token.Token {
 	case '+':
 		tok = newToken(token.PLUS, l.currentChar)
 		break
+	case '-':
+		tok = newToken(token.MINUS, l.currentChar)
+		break
 	case '{':
 		tok = newToken(token.LBRACE, l.currentChar)
 		break
@@ -46,10 +55,40 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.RBRACE, l.currentChar)
 		break
 	case '/':
-		tok = newToken(token.DIVIDE, l.currentChar)
+		tok = newToken(token.SLASH, l.currentChar)
 		break
 	case '%':
 		tok = newToken(token.REMAINDER, l.currentChar)
+		break
+	case '!':
+		if l.peekChar() == '=' {
+			ch := l.currentChar
+			l.readChar()
+			tok = newToken(token.NOT_EQUAL, ch, l.currentChar)
+		} else {
+			tok = newToken(token.BANG, l.currentChar)
+		}
+		break
+	case '*':
+		tok = newToken(token.ASTERISK, l.currentChar)
+		break
+	case '<':
+		if l.peekChar() == '=' {
+			ch := l.currentChar
+			l.readChar()
+			tok = newToken(token.LT_EQUAL, ch, l.currentChar)
+		} else {
+			tok = newToken(token.LT, l.currentChar)
+		}
+		break
+	case '>':
+		if l.peekChar() == '=' {
+			ch := l.currentChar
+			l.readChar()
+			tok = newToken(token.GT_EQUAL, ch, l.currentChar)
+		} else {
+			tok = newToken(token.GT, l.currentChar)
+		}
 		break
 	case 0:
 		tok.Literal = ""
@@ -107,8 +146,20 @@ func (l *Lexer) skipWhitespace() {
 	}
 }
 
-func newToken(tokenType token.TokenType, ch byte) token.Token {
-	return token.Token{Type: tokenType, Literal: string(ch)}
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPosition]
+	}
+}
+
+func newToken(tokenType token.TokenType, ch ...byte) token.Token {
+	str := ""
+	for _, v := range ch {
+		str += string(v)
+	}
+	return token.Token{Type: tokenType, Literal: str}
 }
 
 func isLetter(ch byte) bool {
