@@ -1,20 +1,20 @@
 package main
 
 import (
-	"bufio"
+	"fmt"
 	"os"
+	"os/user"
+
+	"funlang/repl"
 )
 
 func main() {
-	args := os.Args[1:]
-	if len(args) < 1 || args[0] == "" {
-		sc := bufio.NewScanner(os.Stdin)
-		for sc.Scan() {
-			text := sc.Text()
-			if text == "exit" {
-				break
-			}
-		}
-		return
+	user, err := user.Current()
+	if err != nil {
+		panic(err)
 	}
+	fmt.Printf("Hello %s! This is 'BasicLang' Programming language by Sifatul",
+		user.Username)
+	fmt.Println("Feel free to type in commands")
+	repl.Start(os.Stdin, os.Stdout)
 }
