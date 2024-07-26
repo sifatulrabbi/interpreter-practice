@@ -54,6 +54,7 @@ const (
 	FALSE    = "false"
 )
 
+// table of all the available keywords
 var keywords = map[string]TokenType{
 	"fn":       FUNCTION,
 	"let":      LET,
@@ -67,6 +68,8 @@ var keywords = map[string]TokenType{
 	"false":    FALSE,
 }
 
+// do a lookup for the specified identifier in the keywords table
+// if the identifier is not a keyword then return the default IDENT type
 func LookupIdent(ident string) TokenType {
 	if tok, ok := keywords[ident]; ok {
 		return tok

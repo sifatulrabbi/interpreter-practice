@@ -17,11 +17,15 @@ func New(input string) *Lexer {
 	return l
 }
 
+// get the next token from the input, returns an EOF token if there are none
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
+
 	l.skipWhitespace()
+
 	switch l.currentChar {
 	case '=':
+		// to parse '==' token
 		if l.peekChar() == '=' {
 			ch := l.currentChar
 			l.readChar()
@@ -61,6 +65,7 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.REMAINDER, l.currentChar)
 		break
 	case '!':
+		// to parse '!=' token
 		if l.peekChar() == '=' {
 			ch := l.currentChar
 			l.readChar()
@@ -73,6 +78,7 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.ASTERISK, l.currentChar)
 		break
 	case '<':
+		// to parse '<=' token
 		if l.peekChar() == '=' {
 			ch := l.currentChar
 			l.readChar()
@@ -82,6 +88,7 @@ func (l *Lexer) NextToken() token.Token {
 		}
 		break
 	case '>':
+		// to parse '>=' token
 		if l.peekChar() == '=' {
 			ch := l.currentChar
 			l.readChar()
@@ -95,23 +102,33 @@ func (l *Lexer) NextToken() token.Token {
 		tok.Type = token.EOF
 		break
 	default:
+		// if the current char is a letter then it is a identifier
 		if isLetter(l.currentChar) {
 			tok.Literal = l.readIdentifier()
 			tok.Type = token.LookupIdent(tok.Literal)
+			// early returning since we l.readIdentifier() will automatically
+			// take the index to the end of the identifier token
 			return tok
 		}
+		// if the current char is a number then it will be number
 		if isDigit(l.currentChar) {
 			tok.Type = token.INT
 			tok.Literal = l.readNumber()
+			// early returning since we l.readNumber() will automatically
+			// take the index to the end of the number token
 			return tok
 		}
 		tok = newToken(token.ILLEGAL, l.currentChar)
 		break
 	}
+
+	// after reading and creating the token need to forward the index to the next possible position
 	l.readChar()
 	return tok
 }
 
+// read any chars that's under the current index. if there are none then return nil
+// after successfully reading the current char it will forward the index too
 func (l *Lexer) readChar() {
 	if l.readPosition >= len(l.input) {
 		// 0 is the ASCII code for 'NUL' character
@@ -124,6 +141,7 @@ func (l *Lexer) readChar() {
 	l.readPosition++
 }
 
+// reads the complete identifier
 func (l *Lexer) readIdentifier() string {
 	pos := l.position
 	for isLetter(l.currentChar) {
@@ -132,6 +150,7 @@ func (l *Lexer) readIdentifier() string {
 	return l.input[pos:l.position]
 }
 
+// read a full number as a single token
 func (l *Lexer) readNumber() string {
 	pos := l.position
 	for isDigit(l.currentChar) {
@@ -140,12 +159,15 @@ func (l *Lexer) readNumber() string {
 	return l.input[pos:l.position]
 }
 
+// when encountered with a whitespace this will move the point to the next
+// token that is not a whitespace character
 func (l *Lexer) skipWhitespace() {
 	for l.currentChar == ' ' || l.currentChar == '\n' || l.currentChar == '\r' || l.currentChar == '\t' {
 		l.readChar()
 	}
 }
 
+// peek to the next available char
 func (l *Lexer) peekChar() byte {
 	if l.readPosition >= len(l.input) {
 		return 0
@@ -154,6 +176,7 @@ func (l *Lexer) peekChar() byte {
 	}
 }
 
+// create a new token.Token
 func newToken(tokenType token.TokenType, ch ...byte) token.Token {
 	str := ""
 	for _, v := range ch {
@@ -162,10 +185,12 @@ func newToken(tokenType token.TokenType, ch ...byte) token.Token {
 	return token.Token{Type: tokenType, Literal: str}
 }
 
+// if the char is a letter or not
 func isLetter(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
 }
 
+// if the char is a digit/integer or not
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
 }
