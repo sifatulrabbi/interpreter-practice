@@ -72,6 +72,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
+	case token.RETURN:
+		return p.parseReturnStatement()
 	default:
 		return nil
 	}
@@ -79,6 +81,7 @@ func (p *Parser) parseStatement() ast.Statement {
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt := &ast.LetStatement{Token: p.curToken}
+
 	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
@@ -89,10 +92,27 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	// TODO: skip all the values till we encounter semicolon
+	// TODO: skip parsing the expressions till we encounter semicolon
+	// this will be implemented later
 	for !p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
+	return stmt
+}
+
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
+	stmt := &ast.ReturnStatement{Token: p.curToken}
+
+	// move to token that's after the return keyword
+	// unlike LetStatement return statement don't always need an expression
+	// because programs may have empty returns to stop a function execution
+	p.nextToken()
+
+	// TODO: skipping parsing the expressions until we hit a semicolon
+	// this will be implemented later
+	for p.curTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
 	return stmt
 }
