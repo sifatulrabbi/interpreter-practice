@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 
 	"funlang/ast"
 	"funlang/lexer"
@@ -39,6 +40,7 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 
 	// calling the nextToken() twice will first update the peekToken later update the curToken
 	p.nextToken()
@@ -172,6 +174,17 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 // since identifiers are expressions too
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	il := &ast.IntegerLiteral{Token: p.curToken}
+	if val, err := strconv.ParseInt(p.curToken.Literal, 0, 64); err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+	} else {
+		il.Value = val
+	}
+	return il
 }
 
 // parse an specific expression based on it's precedence
