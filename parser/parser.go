@@ -20,6 +20,17 @@ const (
 	CALL        // myFunction(X)
 )
 
+var precedences = map[token.TokenType]int{
+	token.EQUAL:     EQUALS,
+	token.NOT_EQUAL: EQUALS,
+	token.LT:        LESSGREATER,
+	token.GT:        LESSGREATER,
+	token.PLUS:      SUM,
+	token.MINUS:     SUM,
+	token.SLASH:     PRODUCT,
+	token.ASTERISK:  PRODUCT,
+}
+
 type (
 	prefixParseFn func() ast.Expression
 	infixParseFn  func(ast.Expression) ast.Expression
@@ -44,12 +55,23 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 
+	p.infixParseFns = make(map[token.TokenType]infixParseFn)
+	p.registerInfix(token.PLUS, p.parseInfixExpression)
+	p.registerInfix(token.MINUS, p.parseInfixExpression)
+	p.registerInfix(token.SLASH, p.parseInfixExpression)
+	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
+	p.registerInfix(token.EQUAL, p.parseInfixExpression)
+	p.registerInfix(token.NOT_EQUAL, p.parseInfixExpression)
+	p.registerInfix(token.LT, p.parseInfixExpression)
+	p.registerInfix(token.GT, p.parseInfixExpression)
+
 	// calling the nextToken() twice will first update the peekToken later update the curToken
 	p.nextToken()
 	p.nextToken()
 	return p
 }
 
+// go through all the tokens and build the structure of the program (ast)
 func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{Statements: []ast.Statement{}}
 	for p.curToken.Type != token.EOF {
@@ -62,6 +84,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
+// get all the errors during parsing process
 func (p *Parser) Errors() []string {
 	return p.errors
 }
@@ -93,6 +116,22 @@ func (p *Parser) peekTokenIs(t token.TokenType) bool {
 	return p.peekToken.Type == t
 }
 
+// get the precedence for next token
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedences[p.peekToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+// get the precedence for current token
+func (p *Parser) curPrecedence() int {
+	if p, ok := precedences[p.curToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
 // adds a new prefix parsing func to the Prefix.prefixParseFns table
 func (p *Parser) registerPrefix(t token.TokenType, fn prefixParseFn) {
 	p.prefixParseFns[t] = fn
@@ -110,6 +149,7 @@ func (p *Parser) peekError(t token.TokenType) {
 	p.errors = append(p.errors, msg)
 }
 
+// create a new errors for unknown prefix parsing
 func (p *Parser) noPrefixFnErr(t token.TokenType) {
 	msg := fmt.Sprintf("no prefix parse function found for %s", t)
 	p.errors = append(p.errors, msg)
@@ -183,6 +223,7 @@ func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 }
 
+// parse and create expressions from integers
 func (p *Parser) parseIntegerLiteral() ast.Expression {
 	il := &ast.IntegerLiteral{Token: p.curToken}
 	if val, err := strconv.ParseInt(p.curToken.Literal, 0, 64); err != nil {
@@ -194,18 +235,30 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return il
 }
 
-// parse an specific expression based on it's precedence
+// parse an expression using a prefixParseFn
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
 		p.noPrefixFnErr(p.curToken.Type)
 		return nil
 	}
-
 	leftExp := prefix()
+
+	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+		infix := p.infixParseFns[p.peekToken.Type]
+		if infix == nil {
+			break
+		}
+		p.nextToken()
+		leftExp = infix(leftExp)
+	}
+
 	return leftExp
 }
 
+// parse a prefix expression e.g. it will parse '!true' by creating
+// an expression for '!' and another one for 'true'
+// a simple 'varname' is also parsed using this function
 func (p *Parser) parsePrefixExpression() ast.Expression {
 	pe := &ast.PrefixExpression{
 		Token:    p.curToken,
@@ -216,4 +269,19 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 	pe.Right = p.parseExpression(PREFIX)
 
 	return pe
+}
+
+// parse a infix expression and all it's tokens
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	exp := &ast.InfixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Left:     left,
+	}
+	precedence := p.curPrecedence()
+
+	p.nextToken()
+	exp.Right = p.parseExpression(precedence)
+
+	return exp
 }
